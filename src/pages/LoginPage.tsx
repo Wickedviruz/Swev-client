@@ -20,20 +20,20 @@ const LoginPage = () => {
         navigate("/accountmanagement");
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Något gick fel");
+      setError(err.response?.data?.error || "Something went wrong!");
     }
   };
 
   return (
     <main>
-      <h2>Logga in</h2>
+      <h2>Log in</h2>
       <form onSubmit={handleSubmit}>
-        <input placeholder="Användarnamn" value={username} onChange={e => setUsername(e.target.value)} required />
-        <input placeholder="Lösenord" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Logga in</button>
+        <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+        <input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <button type="submit">Log in</button>
         {error && <div style={{color:"red"}}>{error}</div>}
       </form>
-      <a href="/register">Skapa konto</a>
+      <a href="/register">Create account</a>
     </main>
   );
 };

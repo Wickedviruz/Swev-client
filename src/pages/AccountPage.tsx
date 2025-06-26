@@ -27,7 +27,7 @@ const AccountPage = () => {
     axios
       .get(`http://localhost:7172/api/character/${user.id}`) // Du kan behöva lägga till /character endpoint i backend
       .then((res) => setCharacters(res.data.characters))
-      .catch((err) => setError("Kunde inte hämta karaktärer"))
+      .catch((err) => setError("Could not fetch characters"))
       .finally(() => setLoading(false));
   }, [user, navigate]);
 
@@ -41,30 +41,30 @@ const AccountPage = () => {
     <Layout>
       <h2>Account Management</h2>
       <div>
-        <strong>Användare:</strong> {user?.username}
+        <strong>User:</strong> {user?.username}
       </div>
-      <h3>Dina karaktärer</h3>
+      <h3>Your characters</h3>
       {loading ? (
-        <div>Laddar...</div>
+        <div>Loading...</div>
       ) : error ? (
         <div style={{ color: "red" }}>{error}</div>
       ) : characters.length === 0 ? (
-        <div>Inga karaktärer – skapa din första!</div>
+        <div>No characters! create your first</div>
       ) : (
         <ul>
           {characters.map((c) => (
             <li key={c.id}>
               {c.name} (Lvl {c.level}){" "}
-              <button onClick={() => handlePlay(c.id)}>Spela som</button>
+              <button onClick={() => handlePlay(c.id)}>Play as</button>
             </li>
           ))}
         </ul>
       )}
-      <button onClick={() => navigate("/create-character")}>Skapa ny karaktär</button>
+      <button onClick={() => navigate("/create-character")}>Chreat new character!</button>
       <button onClick={() => {
         localStorage.removeItem("user");
-        navigate("/login");
-      }}>Logga ut</button>
+        navigate("/");
+      }}>Log out</button>
     </Layout>
   );
 };

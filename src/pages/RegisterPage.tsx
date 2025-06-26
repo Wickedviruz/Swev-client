@@ -23,22 +23,22 @@ const RegisterPage = () => {
       if (err && typeof err === "object" && "response" in err && (err as any).response?.data?.error) {
         setError((err as any).response.data.error);
       } else {
-        setError("Något gick fel");
+        setError("Something went wrong!");
       }
     }
   };
 
   return (
     <main>
-      <h2>Skapa konto</h2>
+      <h2>Create account</h2>
       <form onSubmit={handleSubmit}>
-        <input placeholder="Användarnamn" value={username} onChange={e => setUsername(e.target.value)} required />
-        <input placeholder="E-post" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <input placeholder="Lösenord" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Skapa</button>
+        <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+        <input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        <input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <button type="submit">Create!</button>
         {error && <div style={{color:"red"}}>{error}</div>}
       </form>
-      <a href="/login">Redan ett konto? Logga in</a>
+      <a href="/login">Already have an account? Log in</a>
     </main>
   );
 };

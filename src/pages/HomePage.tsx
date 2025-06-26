@@ -8,7 +8,7 @@ const HomePage = () => (
       {/* Lägg till Highscore/About senare */}
     </nav>
     <section>
-      <h2>Välkommen!</h2>
+      <h2>Welcome!</h2>
       <p>Nyheter och info här...</p>
     </section>
 
