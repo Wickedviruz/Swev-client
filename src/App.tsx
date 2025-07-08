@@ -25,8 +25,12 @@ export default function App() {
       const chars = await fetchCharacters(result.user.id);
       setCharacters(chars);
       setStage("character");
-    } catch (err: any) {
-      alert(err.message || "Login error");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message || "Login error");
+      } else {
+        alert("Login error");
+      }
     }
   }
 
