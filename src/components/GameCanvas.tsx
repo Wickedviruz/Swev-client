@@ -430,7 +430,7 @@ const GameCanvas = ({ characterId, characterName, socket }: GameCanvasProps) => 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#151518",
+        background: "#2d2d2d",
         overflow: "hidden",
         zIndex: 0,
       }}
@@ -443,7 +443,8 @@ const GameCanvas = ({ characterId, characterName, socket }: GameCanvasProps) => 
           transform: `scale(${scale})`,
           transformOrigin: "center center",
           boxShadow: "0 0 36px #000d",
-          background: "#23272f"
+          border: "2px solid #404040",
+          background: "#2d2d2d"
         }}
       />
     </div>

@@ -1,64 +1,114 @@
 // src/components/InventoryWindow.tsx
 import React from 'react';
-import FloatingWindow from './FloatingWindow'; // Importerar den generiska FloatingWindow-komponenten
 
 // Definierar props för InventoryWindow-komponenten
 type InventoryWindowProps = {
-  id: string;        // Unikt ID för fönstret
-  initialX: number;  // Initial X-position
-  initialY: number;  // Initial Y-position
-  width: number;     // Fönstrets bredd
-  height: number;    // Fönstrets höjd
+  id: string; // Fönstrets ID, används för att stänga det
   onClose: (id: string) => void; // Funktion för att stänga fönstret
+  // Inga initialX, initialY, width, height längre, de hanteras av föräldern
 };
 
-const InventoryWindow: React.FC<InventoryWindowProps> = ({
-  id,
-  initialX,
-  initialY,
-  width,
-  height,
-  onClose
-}) => {
+const InventoryWindow: React.FC<InventoryWindowProps> = ({ id, onClose }) => {
+  // Mock data för ryggsäckens innehåll
+  const items = [
+    { id: 1, name: 'Gold Coin', icon: '💰', quantity: 100 },
+    { id: 2, name: 'Health Potion', icon: '🧪', quantity: 5 },
+    { id: 3, name: 'Sword', icon: '🗡️', quantity: 1 },
+    { id: 4, name: 'Shield', icon: '🛡️', quantity: 1 },
+    { id: 5, name: 'Empty Bottle', icon: '🍾', quantity: 12 },
+    { id: 6, name: 'Rope', icon: '🪢', quantity: 1 },
+    { id: 7, name: 'Bread', icon: '🍞', quantity: 3 },
+    { id: 8, name: 'Torch', icon: '🔦', quantity: 2 },
+    { id: 9, name: 'Scroll', icon: '📜', quantity: 1 },
+  ];
+
   return (
-    <FloatingWindow
-      id={id}
-      title="Backpack" // Fast titel för ryggsäcksfönstret
-      initialX={initialX}
-      initialY={initialY}
-      width={width}
-      height={height}
-      onClose={onClose}
-    >
-      {/* Innehållet i ryggsäcksfönstret (rutnät med platser) */}
+    <div style={{
+      width: '100%', // Fyller tillgängligt utrymme i sin förälder (dockningsplatsen)
+      height: '100%',
+      backgroundColor: '#1a1a1a',
+      border: '1px solid #404040',
+      borderRadius: '4px',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden', // Förhindra scroll på hela fönstret
+      boxSizing: 'border-box',
+    }}>
+      {/* Fönstertitel och stängningsknapp (om vi vill ha en intern stängningsknapp) */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)", // 4 kolumner med lika bredd
-        gap: "2px", // Mellanrum mellan rutorna
-        height: "100%", // Fyller tillgänglig höjd
-        overflow: "auto" // Aktiverar scroll om det finns många föremål
+        backgroundColor: '#404040',
+        color: '#ffffff',
+        padding: '5px 10px',
+        borderBottom: '1px solid #505050',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontWeight: 'bold',
+        fontSize: '12px',
       }}>
-        {/* Skapar 20 inventarieplatser */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} style={{
-            width: "32px",
-            height: "32px",
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #404040",
-            borderRadius: "2px", // Lite rundade hörn
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "8px",
-            color: "#888",
-            boxShadow: "inset 0px 0px 2px rgba(0,0,0,0.5)" // Inre skugga för djup
+        Backpack
+        <button
+          onClick={() => onClose(id)}
+          style={{
+            backgroundColor: '#ff4444',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '3px',
+            padding: '1px 5px',
+            cursor: 'pointer',
+            fontSize: '10px',
+            fontWeight: 'bold',
+          }}
+        >
+          X
+        </button>
+      </div>
+
+      {/* Innehåll i ryggsäcken */}
+      <div style={{
+        flex: 1, // Tar upp resterande utrymme
+        padding: '5px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)', // 4 kolumner för föremål
+        gap: '4px',
+        overflowY: 'auto', // Aktivera scroll för föremålslistan
+      }}>
+        {items.map(item => (
+          <div key={item.id} style={{
+            backgroundColor: '#252525',
+            border: '1px solid #3a3a3a',
+            borderRadius: '3px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '5px',
+            fontSize: '10px',
+            color: '#cccccc',
+            textAlign: 'center',
+            position: 'relative',
+            height: '48px', // Fast höjd för varje föremålsruta
           }}>
-            {/* Exempel på föremål (ryggsäcksemoji) */}
-            {i < 5 ? "🎒" : ""}
+            <span style={{ fontSize: '20px', marginBottom: '2px' }}>{item.icon}</span>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{item.name}</span>
+            {item.quantity > 1 && (
+              <span style={{
+                position: 'absolute',
+                bottom: '2px',
+                right: '2px',
+                backgroundColor: '#000a',
+                color: '#fff',
+                padding: '0 3px',
+                borderRadius: '2px',
+                fontSize: '8px',
+              }}>
+                {item.quantity}
+              </span>
+            )}
           </div>
         ))}
       </div>
-    </FloatingWindow>
+    </div>
   );
 };
 
