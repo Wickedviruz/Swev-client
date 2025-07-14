@@ -1,45 +1,60 @@
 import Phaser from 'phaser';
 
-export class Player extends Phaser.Physics.Arcade.Sprite {
+export class Player {
+    public sprite: Phaser.Physics.Arcade.Sprite;
     public nameText: Phaser.GameObjects.Text;
-    public sprite: this; // En referens till sig själv för tydlighet
+    public name: string;
+    public looktype: number; // Lägg till denna egenskap
+    public direction: number; // Lägg till denna egenskap
 
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string, name: string) {
-        super(scene, x, y, texture);
+    private scene: Phaser.Scene;
 
-        scene.add.existing(this); // Lägg till i scenen
-        scene.physics.add.existing(this); // Lägg till i fysiksystemet
+    constructor(
+        scene: Phaser.Scene, 
+        x: number, 
+        y: number, 
+        atlasKey: string, 
+        name: string,
+        looktype: number, // Lägg till denna parameter
+        direction: number // Lägg till denna parameter
+    ) {
+        this.scene = scene;
+        this.name = name;
+        this.looktype = looktype; // Spara looktype
+        this.direction = direction; // Spara direction
 
-        this.setCollideWorldBounds(true); // Kollidera med världens gränser
-        this.setOrigin(0.5, 0.5); // Sätt origin till mitten
-        
-        this.sprite = this; // Ge en tydlig referens till sig själv
+        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, 'orc_down_idle').setOrigin(0.5);
+        this.sprite.setCollideWorldBounds(true);
+        this.sprite.setDamping(true).setDrag(0.99);
+        this.sprite.body.onOverlap = true;
 
-        this.nameText = scene.add.text(
-            this.x,
-            this.y - (this.displayHeight / 2) - 10, // Placera ovanför sprite
-            name,
-            {
-                fontSize: "16px",
-                color: "#fff",
-                backgroundColor: "#0008",
-                padding: { x: 4, y: 2 }
-            }
-        ).setOrigin(0.5, 1);
+        this.nameText = this.scene.add.text(x, y - 20, name, {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        // Skicka med `this` som data för att kunna uppdatera namnet och bubblan
+        this.sprite.setData('owner', this);
     }
-
-    // Metod för att uppdatera namntextens position
+    
     updateNameTextPosition() {
-        this.nameText.setPosition(this.x, this.y - (this.displayHeight / 2) - 10);
+        this.nameText.x = this.sprite.x;
+        this.nameText.y = this.sprite.y - 20;
     }
 
-    // Metod för att spela animationer
-    playAnimation(key: string, ignoreIfPlaying: boolean = false) {
-        this.play(key, ignoreIfPlaying);
+    setVelocity(vx: number, vy: number) {
+        this.sprite.setVelocity(vx, vy);
+    }
+
+    playAnimation(key: string, ignoreIfPlaying?: boolean) {
+        this.sprite.play(key, ignoreIfPlaying);
     }
 
     destroy() {
-        super.destroy();
+        this.sprite.destroy();
         this.nameText.destroy();
     }
 }

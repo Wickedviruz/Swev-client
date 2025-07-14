@@ -1,16 +1,24 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, GRID_WIDTH, GRID_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from './../constants'; // Skapa en constants.ts
-import { Player } from '../objects/Player'; // Kommer att skapa denna fil
-import { OtherPlayer } from '../objects/OtherPlayer'; // Kommer att skapa denna fil
-import { BubbleTextManager } from '../managers/BubbleTextManager'; // Kommer att skapa denna fil
-import { AnimationManager } from '../managers/AnimationManager'; // VIKTIGAST FÖR DINA SPRITES
+import { TILE_SIZE, GRID_WIDTH, GRID_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from './../constants';
+import { Player } from '../objects/Player';
+import { OtherPlayer } from '../objects/OtherPlayer';
+import { BubbleTextManager } from '../managers/BubbleTextManager';
+import { AssetManager } from '../managers/AssetManager'; // VIKTIGT: Importera din nya AssetManager
 
 type PlayerData = {
     id: number;
     name: string;
     x: number;
     y: number;
-    // Lägg till fler egenskaper från servern, t.ex. 'currentAnimation'
+    lookbody: number;
+    lookfeet: number;
+    lookhead: number;
+    looklegs: number;
+    looktype: number;
+    direction: number;
+    level?: number;
+    health?: number;
+    mana?: number;
 };
 
 export class MainScene extends Phaser.Scene {
@@ -18,24 +26,22 @@ export class MainScene extends Phaser.Scene {
     private characterId: number;
     private characterName: string;
     
-    // Lokala referenser till spelobjekt
     private currentPlayer: Player | null = null;
     private otherPlayers: Record<number, OtherPlayer> = {};
-    private playerGroup: Phaser.Physics.Arcade.Group | null = null; // För kollisioner
+    private playerGroup: Phaser.Physics.Arcade.Group | null = null;
 
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
     private lastMoveTime: number = 0;
     private socketListenersSetup: boolean = false;
 
-    private bubbleTextManager: BubbleTextManager; // Manager för chattbubblor
+    private bubbleTextManager: BubbleTextManager;
 
-    // Constructor för att ta emot props från React-komponenten
     constructor(socket: any, characterId: number, characterName: string) {
         super({ key: 'MainScene' });
         this.socket = socket;
         this.characterId = characterId;
         this.characterName = characterName;
-        this.bubbleTextManager = new BubbleTextManager(this); // Skicka med scenen
+        this.bubbleTextManager = new BubbleTextManager(this);
     }
 
     preload() {
@@ -48,28 +54,29 @@ export class MainScene extends Phaser.Scene {
             console.log('[MainScene] All assets loaded successfully');
         });
 
-        // Ladda din orc_sheet (och andra char-sheets här)
-        this.load.atlas('orc_character', '/assets/orc_sheet.png', '/assets/orc_sheet.json');
-        this.load.atlas('goblin_character', '/assets/goblin_sheet.png', '/assets/goblin_sheet.json'); // Exempel för goblin
-        // this.load.image("other", "/assets/stone.png"); // Denna behövs inte längre om alla har riktiga sprites
         this.load.image("ground", "/assets/ground.png");
+
+        // Dynamiskt ladda alla karaktärs-atlases från registret
+        const atlasesToLoad = AssetManager.getUniqueAtlasKeys();
+        atlasesToLoad.forEach(atlasKey => {
+            const charKey = atlasKey.replace('_character', '');
+            this.load.atlas(atlasKey, `/assets/${charKey}_sheet.png`, `/assets/${charKey}_sheet.json`);
+        });
     }
 
     create() {
         console.log('[MainScene] Creating scene...');
         
-        // Skapa bakgrund (fortfarande här då det är en del av scenens visuella uppbyggnad)
         for (let x = 0; x < GRID_WIDTH; x++) {
             for (let y = 0; y < GRID_HEIGHT; y++) {
                 this.add.image(x * TILE_SIZE, y * TILE_SIZE, "ground").setOrigin(0);
             }
         }
 
-        // Skapa Player-gruppen för kollisioner
         this.playerGroup = this.physics.add.group();
 
-        // Initiera animationerna globalt i scenen (VIKTIGT!)
-        AnimationManager.createAllCharacterAnimations(this.anims);
+        // Initiera animationerna globalt i scenen
+        AssetManager.createAllAnimations(this.anims);
 
         this.setupSocketListeners();
 
@@ -80,7 +87,6 @@ export class MainScene extends Phaser.Scene {
         console.log('[MainScene] Scene created, waiting for currentPlayers event...');
     }
 
-    // Flytta all socket-logik hit
     private setupSocketListeners() {
         if (this.socketListenersSetup) {
             console.log('[MainScene] Socket listeners already set up, skipping');
@@ -89,7 +95,6 @@ export class MainScene extends Phaser.Scene {
 
         console.log('[MainScene] Setting up socket listeners...');
         
-        // Rensa alla lyssnare INNAN vi lägger till nya (mycket viktigt vid re-render av React-komponent)
         this.socket.removeAllListeners("currentPlayers");
         this.socket.removeAllListeners("playerJoined");
         this.socket.removeAllListeners("playerMoved");
@@ -99,11 +104,7 @@ export class MainScene extends Phaser.Scene {
         this.socket.on("currentPlayers", (players: PlayerData[]) => {
             console.log('[MainScene] ✅ Received currentPlayers:', players);
             
-            // Rensa befintliga spelare vid full synkronisering
-            if (this.currentPlayer) {
-                this.currentPlayer.destroy();
-                this.currentPlayer = null;
-            }
+            if (this.currentPlayer) { this.currentPlayer.destroy(); this.currentPlayer = null; }
             Object.values(this.otherPlayers).forEach(op => op.destroy());
             this.otherPlayers = {};
             this.bubbleTextManager.clearAllBubbles();
@@ -115,41 +116,50 @@ export class MainScene extends Phaser.Scene {
             }
 
             players.forEach((p) => {
+                const look = AssetManager.getCharacterLook(p.looktype);
+                const atlasKey = look ? look.atlas : 'orc_character';
+
                 if (p.id === this.characterId) {
-                    this.currentPlayer = new Player(this, p.x, p.y, 'orc_character', p.name); // Använd Player-klassen
-                    this.playerGroup?.add(this.currentPlayer);
-                    this.cameras.main.startFollow(this.currentPlayer.sprite, true, 0.08, 0.08); // Använd sprite-objektet
-                    this.currentPlayer.sprite.play('orc_idle_down'); // Initial animation
+                    this.currentPlayer = new Player(this, p.x, p.y, atlasKey, p.name);
+                    this.playerGroup?.add(this.currentPlayer.sprite);
+                    this.cameras.main.startFollow(this.currentPlayer.sprite, true, 0.08, 0.08);
+
+                    const initialAnimationKey = AssetManager.getAnimationKey(p.looktype, p.direction, 'idle');
+                    this.currentPlayer.sprite.play(initialAnimationKey);
                 } else {
-                    const otherPlayer = new OtherPlayer(this, p.x, p.y, 'goblin_character', p.name, p.id); // Använd OtherPlayer-klass
+                    const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id);
                     this.otherPlayers[p.id] = otherPlayer;
                     this.playerGroup?.add(otherPlayer.sprite);
-                    otherPlayer.sprite.play('goblin_idle_down'); // Initial animation
+
+                    const initialAnimationKey = AssetManager.getAnimationKey(p.looktype, p.direction, 'idle');
+                    otherPlayer.sprite.play(initialAnimationKey);
                 }
             });
-
-            // Sätt upp kollisioner
             this.physics.add.collider(this.playerGroup, this.playerGroup);
-            
             console.log('[MainScene] Scene setup complete. Main player exists:', !!this.currentPlayer);
         });
 
         this.socket.on("playerJoined", (p: PlayerData) => {
             console.log('[MainScene] ✅ Player joined:', p);
             if (p.id !== this.characterId && !this.otherPlayers[p.id]) {
-                const otherPlayer = new OtherPlayer(this, p.x, p.y, 'goblin_character', p.name, p.id);
+                const look = AssetManager.getCharacterLook(p.looktype);
+                const atlasKey = look ? look.atlas : 'orc_character';
+
+                const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id);
                 this.otherPlayers[p.id] = otherPlayer;
                 this.playerGroup?.add(otherPlayer.sprite);
-                otherPlayer.sprite.play('goblin_idle_down'); // Initial animation
+
+                const initialAnimationKey = AssetManager.getAnimationKey(p.looktype, p.direction, 'idle');
+                otherPlayer.sprite.play(initialAnimationKey);
             }
         });
 
         this.socket.on("playerMoved", (data: { id: number; x: number; y: number; animationKey: string }) => {
-            if (data.id === this.characterId) return; // Main player is handled by client input
+            if (data.id === this.characterId) return;
             const op = this.otherPlayers[data.id];
             if (!op) return;
             op.updatePosition(data.x, data.y);
-            op.playAnimation(data.animationKey, true); // Spela animation från servern
+            op.playAnimation(data.animationKey, true);
         });
 
         this.socket.on("playerLeft", ({ id }: { id: number }) => {
@@ -181,51 +191,45 @@ export class MainScene extends Phaser.Scene {
         
         const speed = 160;
         let vx = 0, vy = 0;
-        let animationKey = '';
+        let direction = this.currentPlayer.direction;
 
         if (this.cursors.left.isDown) {
             vx = -speed;
-            animationKey = 'orc_walk_left';
+            direction = 0;
         } else if (this.cursors.right.isDown) {
             vx = speed;
-            animationKey = 'orc_walk_right';
+            direction = 3;
         } else if (this.cursors.up.isDown) {
             vy = -speed;
-            animationKey = 'orc_walk_up';
+            direction = 1;
         } else if (this.cursors.down.isDown) {
             vy = speed;
-            animationKey = 'orc_walk_down';
+            direction = 2;
         }
 
         this.currentPlayer.setVelocity(vx, vy);
 
-        if (vx === 0 && vy === 0) {
-            // No movement, play idle animation based on last direction
-            let currentAnimKey = this.currentPlayer.sprite.anims.currentAnim ? this.currentPlayer.sprite.anims.currentAnim.key : null;
-            if (currentAnimKey && currentAnimKey.startsWith('orc_walk_')) {
-                animationKey = currentAnimKey.replace('orc_walk_', 'orc_idle_');
-            } else if (!currentAnimKey || currentAnimKey.startsWith('orc_idle_')) {
-                // If already idle or no animation, ensure it stays idle (or default down idle)
-                animationKey = currentAnimKey || 'orc_idle_down';
-            }
-        }
+        const action = (vx === 0 && vy === 0) ? 'idle' : 'walk';
+        const animationKey = AssetManager.getAnimationKey(this.currentPlayer.looktype, direction, action);
+        
+        this.currentPlayer.direction = direction;
+        
+        this.currentPlayer.playAnimation(animationKey, true);
 
-        // Spela animationen
-        if (animationKey) {
-            this.currentPlayer.playAnimation(animationKey, true);
-        }
-
-        // Uppdatera namntextens position
         this.currentPlayer.updateNameTextPosition();
+        this.bubbleTextManager.updateBubbles(time);
 
-        // Begränsa move-meddelanden för att undvika överbelastning
         const now = Date.now();
-        if (now - this.lastMoveTime > 10) { // Max 20 FPS för move events
-            this.socket.emit("move", { x: this.currentPlayer.sprite.x, y: this.currentPlayer.sprite.y, animationKey: animationKey });
+        if (now - this.lastMoveTime > 10) {
+            this.socket.emit("move", { 
+                x: this.currentPlayer.sprite.x, 
+                y: this.currentPlayer.sprite.y, 
+                animationKey: animationKey,
+                direction: direction
+            });
             this.lastMoveTime = now;
         }
 
-        // Uppdatera chattbubblor
         this.bubbleTextManager.updateBubbles(now);
     }
 }
