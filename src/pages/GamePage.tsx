@@ -4,13 +4,13 @@ import GameCanvas from "../components/GameCanvas";
 import type { User, Character } from "../types";
 import { createSocket, resetSocket } from "../socket";
 
-import ChatWindow from "../components/ChatWindow";
-import SidebarLeft from "../components/SidebarLeft";
-import SidebarRight from "../components/SidebarRight";
-import StatusBar from "../components/StatusBar";
-import ActionBar from "../components/ActionBar";
+import ChatWindow from "../components/gameUI/ChatWindow";
+import SidebarLeft from "../components/gameUI/SidebarLeft";
+import SidebarRight from "../components/gameUI/SidebarRight";
+import StatusBar from "../components/gameUI/StatusBar";
+import ActionBar from "../components/gameUI/ActionBar";
 import FloatingWindow from "../components/FloatingWindow"; // Fortfarande för andra flytande fönster om de behövs
-import InventoryWindow from "../components/InventoryWindow"; // Nu bara innehållet, inte en FloatingWindow
+import InventoryWindow from "../components/gameUI/InventoryWindow"; // Nu bara innehållet, inte en FloatingWindow
 import SettingsWindow from '../components/SettingsWindow'; // Nu en fristående flytande komponent
 
 // Definierar typen för ett öppet fönster (nu bara för flytande fönster som INTE är InventoryWindow eller SettingsWindow)

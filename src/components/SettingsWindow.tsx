@@ -281,7 +281,6 @@ const SettingsWindow: React.FC<SettingsWindowProps> = ({
         overflow: 'hidden', // Förhindra scroll på hela fönstret
         zIndex: 999, // Se till att fönstret ligger överst
         resize: 'none', // Tillåter manuell resizning (om webbläsaren stöder det)
-        overflow: 'auto', // Visar scrollbars om innehållet är större än fönstret
       }}
     >
       {/* Titelrad */}
