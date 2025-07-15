@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { AssetManager } from '../managers/AssetManager'; // Importera AssetManager
 
 export class Player {
     public sprite: Phaser.Physics.Arcade.Sprite;
     public nameText: Phaser.GameObjects.Text;
     public name: string;
-    public looktype: number; // Lägg till denna egenskap
-    public direction: number; // Lägg till denna egenskap
+    public looktype: number;
+    public direction: number;
 
     private scene: Phaser.Scene;
 
@@ -15,15 +16,17 @@ export class Player {
         y: number, 
         atlasKey: string, 
         name: string,
-        looktype: number, // Lägg till denna parameter
-        direction: number // Lägg till denna parameter
+        looktype: number, 
+        direction: number 
     ) {
         this.scene = scene;
         this.name = name;
-        this.looktype = looktype; // Spara looktype
-        this.direction = direction; // Spara direction
+        this.looktype = looktype; 
+        this.direction = direction; 
 
-        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, 'orc_down_idle').setOrigin(0.5);
+        // Använd AssetManager för att få den initiala framen
+        const initialFrame = AssetManager.getAnimationKey(looktype, direction, 'idle');
+        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, initialFrame).setOrigin(0.5);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setDamping(true).setDrag(0.99);
         this.sprite.body.onOverlap = true;
@@ -36,7 +39,6 @@ export class Player {
             strokeThickness: 3
         }).setOrigin(0.5);
 
-        // Skicka med `this` som data för att kunna uppdatera namnet och bubblan
         this.sprite.setData('owner', this);
     }
     

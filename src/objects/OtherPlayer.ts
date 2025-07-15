@@ -1,45 +1,67 @@
 import Phaser from 'phaser';
+import { AssetManager } from '../managers/AssetManager'; // Importera AssetManager
 
-export class OtherPlayer extends Phaser.Physics.Arcade.Sprite {
+export class OtherPlayer {
+    public sprite: Phaser.Physics.Arcade.Sprite;
     public nameText: Phaser.GameObjects.Text;
+    public name: string;
     public id: number;
-    public sprite: this;
+    public looktype: number; // Lägg till denna egenskap
+    public direction: number; // Lägg till denna egenskap
 
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string, name: string, id: number) {
-        super(scene, x, y, texture);
+    private scene: Phaser.Scene;
 
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.setOrigin(0.5, 0.5);
-        this.setCollideWorldBounds(true); // Kan behövas för kollisioner mellan andra spelare
+    constructor(
+        scene: Phaser.Scene, 
+        x: number, 
+        y: number, 
+        atlasKey: string, 
+        name: string, 
+        id: number,
+        looktype: number, // Lägg till denna parameter
+        direction: number // Lägg till denna parameter
+    ) {
+        this.scene = scene;
+        this.name = name;
         this.id = id;
-        this.sprite = this;
+        this.looktype = looktype; // Spara looktype
+        this.direction = direction; // Spara direction
 
-        this.nameText = scene.add.text(
-            this.x,
-            this.y - (this.displayHeight / 2) - 10,
-            name,
-            {
-                fontSize: "16px",
-                color: "#fff",
-                backgroundColor: "#0008",
-                padding: { x: 4, y: 2 }
-            }
-        ).setOrigin(0.5, 1);
+        // Använd AssetManager för att få den initiala framen
+        const initialFrame = AssetManager.getAnimationKey(looktype, direction, 'idle');
+        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, initialFrame).setOrigin(0.5);
+        this.sprite.setCollideWorldBounds(true);
+        this.sprite.setDamping(true).setDrag(0.99);
+
+        this.nameText = this.scene.add.text(x, y - 20, name, {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.sprite.setData('owner', this);
     }
 
     updatePosition(x: number, y: number) {
-        this.setPosition(x, y);
-        this.nameText.setPosition(x, y - (this.displayHeight / 2) - 10);
+        this.sprite.x = x;
+        this.sprite.y = y;
+        this.updateNameTextPosition();
     }
 
-    playAnimation(key: string, ignoreIfPlaying: boolean = false) {
-        this.play(key, ignoreIfPlaying);
+    updateNameTextPosition() {
+        this.nameText.x = this.sprite.x;
+        this.nameText.y = this.sprite.y - 20;
+    }
+
+    playAnimation(key: string, ignoreIfPlaying?: boolean) {
+        if (!this.sprite) return; // Säkerhetskoll
+        this.sprite.play(key, ignoreIfPlaying);
     }
 
     destroy() {
-        super.destroy();
+        this.sprite.destroy();
         this.nameText.destroy();
     }
 }

@@ -4,6 +4,7 @@ import { Player } from '../objects/Player';
 import { OtherPlayer } from '../objects/OtherPlayer';
 import { BubbleTextManager } from '../managers/BubbleTextManager';
 import { AssetManager } from '../managers/AssetManager'; // VIKTIGT: Importera din nya AssetManager
+import { assetRegistry } from '../assetRegistry'; // Importera assetRegistry direkt
 
 type PlayerData = {
     id: number;
@@ -56,11 +57,9 @@ export class MainScene extends Phaser.Scene {
 
         this.load.image("ground", "/assets/ground.png");
 
-        // Dynamiskt ladda alla karaktärs-atlases från registret
         const atlasesToLoad = AssetManager.getUniqueAtlasKeys();
         atlasesToLoad.forEach(atlasKey => {
-            const charKey = atlasKey.replace('_character', '');
-            this.load.atlas(atlasKey, `/assets/${charKey}_sheet.png`, `/assets/${charKey}_sheet.json`);
+            this.load.atlas(atlasKey, `./assets/${atlasKey}.png`, `./assets/${atlasKey}.json`);
         });
     }
 
@@ -117,17 +116,20 @@ export class MainScene extends Phaser.Scene {
 
             players.forEach((p) => {
                 const look = AssetManager.getCharacterLook(p.looktype);
-                const atlasKey = look ? look.atlas : 'orc_character';
+                // Använd 'players' som fallback för atlasKey om looktype inte hittas
+                const atlasKey = look ? look.atlas : 'players'; 
 
                 if (p.id === this.characterId) {
-                    this.currentPlayer = new Player(this, p.x, p.y, atlasKey, p.name);
+                    // Skicka med looktype och direction
+                    this.currentPlayer = new Player(this, p.x, p.y, atlasKey, p.name, p.looktype, p.direction);
                     this.playerGroup?.add(this.currentPlayer.sprite);
                     this.cameras.main.startFollow(this.currentPlayer.sprite, true, 0.08, 0.08);
 
                     const initialAnimationKey = AssetManager.getAnimationKey(p.looktype, p.direction, 'idle');
                     this.currentPlayer.sprite.play(initialAnimationKey);
                 } else {
-                    const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id);
+                    // Skicka med looktype och direction till OtherPlayer också
+                    const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id, p.looktype, p.direction);
                     this.otherPlayers[p.id] = otherPlayer;
                     this.playerGroup?.add(otherPlayer.sprite);
 
@@ -143,9 +145,10 @@ export class MainScene extends Phaser.Scene {
             console.log('[MainScene] ✅ Player joined:', p);
             if (p.id !== this.characterId && !this.otherPlayers[p.id]) {
                 const look = AssetManager.getCharacterLook(p.looktype);
-                const atlasKey = look ? look.atlas : 'orc_character';
+                const atlasKey = look ? look.atlas : 'players'; // Använd 'players' som fallback
 
-                const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id);
+                // Skicka med looktype och direction
+                const otherPlayer = new OtherPlayer(this, p.x, p.y, atlasKey, p.name, p.id, p.looktype, p.direction);
                 this.otherPlayers[p.id] = otherPlayer;
                 this.playerGroup?.add(otherPlayer.sprite);
 
@@ -154,12 +157,15 @@ export class MainScene extends Phaser.Scene {
             }
         });
 
-        this.socket.on("playerMoved", (data: { id: number; x: number; y: number; animationKey: string }) => {
+        this.socket.on("playerMoved", (data: { id: number; x: number; y: number; direction: number; looktype: number }) => {
             if (data.id === this.characterId) return;
             const op = this.otherPlayers[data.id];
             if (!op) return;
             op.updatePosition(data.x, data.y);
-            op.playAnimation(data.animationKey, true);
+            
+            // NYTT: Hämta animationKey baserat på looktype och direction
+            const animationKey = AssetManager.getAnimationKey(data.looktype, data.direction, 'walk');
+            op.playAnimation(animationKey, true);
         });
 
         this.socket.on("playerLeft", ({ id }: { id: number }) => {
@@ -224,7 +230,7 @@ export class MainScene extends Phaser.Scene {
             this.socket.emit("move", { 
                 x: this.currentPlayer.sprite.x, 
                 y: this.currentPlayer.sprite.y, 
-                animationKey: animationKey,
+                looktype: this.currentPlayer.looktype, 
                 direction: direction
             });
             this.lastMoveTime = now;
