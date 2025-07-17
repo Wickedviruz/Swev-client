@@ -8,6 +8,7 @@ export const assetRegistry = {
   // Mappar looktype för karaktärer
   characters: {
     73: { key: 'outfit_73', atlas: 'players' }, // Viktigt: Använd 'outfit_73' som key för att matcha filnamnen
+    75: { key: 'outfit_75', atlas: 'players' },
   },
 
   // Mappar ID för statiska föremål/plattor (ingen ändring behövs här för nu)

@@ -1,24 +1,24 @@
+// src/components/GameCanvas.tsx
+
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
-import { MainScene } from "../scenes/MainScene"; // Importera din separata scen
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../constants"; // Importera konstanter
+import { MainScene } from "../scenes/MainScene"; 
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../constants"; 
+import type { Character } from '../types'; 
 
 type GameCanvasProps = {
-  characterId: number;
-  characterName: string;
   socket: any;
+  isChatInputFocused: boolean;
+  mainCharacterData: Character | null; // Acceptera null initialt
+  isConnected: boolean; // Ny prop för att veta om socket är ansluten
 };
 
-const GameCanvas = ({ characterId, characterName, socket }: GameCanvasProps) => {
+const GameCanvas = ({ socket, isChatInputFocused, mainCharacterData, isConnected }: GameCanvasProps) => {
   const phaserRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const gameRef = useRef<Phaser.Game | null>(null);
-  const initializationRef = useRef<boolean>(false);
 
-  // bubbleTextsRef ligger kvar här i React då den är en del av React-state
-  // som sedan skickas ner till MainScene via konstruktorn för bubblornas hantering
-  const bubbleTextsRef = useRef<{ [id: number]: { text: string; ts: number } }>({});
-
+  // Effekt för att hantera skalning av canvas baserat på fönsterstorlek
   useEffect(() => {
     function updateScale() {
       const scaleW = window.innerWidth / CANVAS_WIDTH;
@@ -30,82 +30,69 @@ const GameCanvas = ({ characterId, characterName, socket }: GameCanvasProps) => 
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
+  // Effekt för att initialisera Phaser-spelet
   useEffect(() => {
-    if (initializationRef.current) {
-      console.log('[GameCanvas] Skipping duplicate initialization');
+    // VIKTIGT: Denna check garanterar att Phaser ENDAST initialiseras när vi har
+    // - en socket-instans
+    // - en aktiv anslutning (isConnected)
+    // - den serverbekräftade mainCharacterData
+    if (!socket || !isConnected || !mainCharacterData) {
+      console.log('[GameCanvas] Waiting for socket connection and character data. Socket:', !!socket, 'Connected:', isConnected, 'CharacterData:', !!mainCharacterData);
+      // Om spelet redan är igång och vi plötsligt tappar data/anslutning, förstör det.
+      if (gameRef.current) {
+         console.log('[GameCanvas] Conditions not met, destroying existing game instance.');
+         gameRef.current.destroy(true);
+         gameRef.current = null;
+      }
       return;
     }
 
+    // Om spelet redan finns, förstör det först för att undvika dubbelinstansiering vid React re-render.
     if (gameRef.current) {
-      console.log('[GameCanvas] Destroying existing game instance');
+      console.log('[GameCanvas] Destroying existing game instance before re-initialization (due to prop change).');
       gameRef.current.destroy(true);
       gameRef.current = null;
     }
 
-    if (!socket) {
-      console.log('[GameCanvas] No socket provided, skipping initialization');
-      return;
-    }
+    // Logga de FAKTISKA värdena som används för initialiseringen
+    console.log('[GameCanvas] Initializing Phaser with characterId:', mainCharacterData.id, 'characterName:', mainCharacterData.name);
+    console.log('[GameCanvas] Socket state (at init):', socket.connected, socket.id);
+    console.log('[GameCanvas] Full mainCharacterData received for initialization:', mainCharacterData);
 
-    console.log('[GameCanvas] Starting with characterId:', characterId, 'characterName:', characterName);
-    console.log('[GameCanvas] Socket state:', socket.connected, socket.id);
 
-    initializationRef.current = true;
-
-    // Wait for socket to be connected before initializing game
-    const initializeGame = () => {
-      if (!socket.connected) {
-        console.log('[GameCanvas] Socket not connected yet, waiting...');
-        setTimeout(initializeGame, 100);
-        return;
-      }
-
-      console.log('[GameCanvas] Socket connected, initializing game...');
-
-      // Skicka in socket, characterId och characterName till MainScene via konstruktorn
-      const config: Phaser.Types.Core.GameConfig = {
-        type: Phaser.AUTO,
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-        physics: { default: "arcade", arcade: { debug: false } },
-        scene: new MainScene(socket, characterId, characterName), // Pass props here
-        parent: phaserRef.current!,
-        backgroundColor: "#23272f"
-      };
-
-      gameRef.current = new Phaser.Game(config);
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
+      physics: { default: "arcade", arcade: { debug: false } }, 
+      // Skicka mainCharacterData direkt till MainScene konstruktorn
+      scene: new MainScene(socket, mainCharacterData.id, mainCharacterData.name, mainCharacterData), 
+      parent: phaserRef.current!,
+      backgroundColor: "#23272f"
     };
 
-    initializeGame();
+    gameRef.current = new Phaser.Game(config);
+    console.log('[GameCanvas] Phaser game instance created.');
 
     return () => {
-      console.log('[GameCanvas] Cleaning up GameCanvas');
-      initializationRef.current = false;
-      
+      console.log('[GameCanvas] Cleaning up GameCanvas: Destroying Phaser game instance on unmount or dependency change.');
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;
       }
     };
-  }, [characterId, characterName, socket?.id]);
+  }, [socket, isConnected, mainCharacterData]); // Beroende på socket, dess anslutningsstatus och characterData
 
+  // Effekt för att skicka chatt input focus state till Phaser
   useEffect(() => {
-    if (!socket) return;
-
-    const handleConnect = () => { console.log('[GameCanvas] Socket connected event received'); };
-    const handleDisconnect = (reason: string) => { console.log('[GameCanvas] Socket disconnected event received:', reason); };
-    const handleConnectError = (error: any) => { console.error('[GameCanvas] Socket connection error:', error); };
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleConnectError);
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('connect_error', handleConnectError);
-    };
-  }, [socket]);
+    // Endast om spelet är igång och MainScene är aktiv
+    if (gameRef.current && gameRef.current.scene.isActive('MainScene')) {
+      const mainScene = gameRef.current.scene.getScene('MainScene') as MainScene;
+      if (mainScene && typeof mainScene.setChatInputFocus === 'function') {
+        mainScene.setChatInputFocus(isChatInputFocused);
+      }
+    }
+  }, [isChatInputFocused]);
 
   return (
     <div

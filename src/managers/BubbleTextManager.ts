@@ -1,110 +1,106 @@
+// src/managers/BubbleTextManager.ts
 import Phaser from 'phaser';
-import { splitLines } from '../utils/textUtils'; // Skapa en textUtils.ts för denna helper
+import { splitLines } from '../utils/textUtils'; // Ensure this utility is available
 
-type BubbleData = { text: string; ts: number; };
+interface ActiveBubbleData {
+    textObject: Phaser.GameObjects.Text;
+    timer: Phaser.Time.TimerEvent;
+    attachedSprite: Phaser.Physics.Arcade.Sprite; // Store the sprite reference
+}
 
 export class BubbleTextManager {
     private scene: Phaser.Scene;
-    private activeBubbles: { [id: number]: Phaser.GameObjects.Text } = {};
-    private pendingBubbles: { [id: number]: BubbleData } = {}; // Från React-refen
+    private activeBubbles: Map<number, ActiveBubbleData> = new Map(); // Map player ID to bubble data
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
     }
 
-    // Kallad från React-komponentens ref för att lägga till/uppdatera bubblor
-    addBubble(id: number, text: string) {
-        this.pendingBubbles[id] = { text, ts: this.scene.time.now };
-    }
+    /**
+     * Adds or updates a chat bubble for a given player ID, attached to their sprite.
+     * @param playerId The ID of the player.
+     * @param message The text content of the bubble.
+     * @param attachedSprite The Phaser sprite that the bubble should follow.
+     */
+    addBubble(playerId: number, message: string, attachedSprite: Phaser.Physics.Arcade.Sprite) {
+        // If a bubble already exists for this player, destroy it and its timer first
+        this.removeBubble(playerId);
 
-    removeBubble(id: number) {
-        if (this.activeBubbles[id]) {
-            this.activeBubbles[id].destroy();
-            delete this.activeBubbles[id];
-        }
-        delete this.pendingBubbles[id];
-    }
-
-    clearAllBubbles() {
-        Object.values(this.activeBubbles).forEach(bubble => bubble.destroy());
-        this.activeBubbles = {};
-        this.pendingBubbles = {};
-    }
-
-    updateBubbles(currentTime: number) {
-        // Hantera inkommande bubblor från pending
-        Object.entries(this.pendingBubbles).forEach(([id, { text, ts }]) => {
-            const parsedId = parseInt(id); // Säkerställ att det är ett nummer
-            let sprite = null;
-            // Hur du får tag på spriten beror på hur du hanterar dem i din MainScene
-            // Antar att du har tillgång till spelarobjekten i MainScene
-            // Få referens till spelaren eller OtherPlayer's sprite. Detta kan behöva justeras
-            // beroende på hur MainScene exponerar sina spelare.
-            // BÄTTRE ATT SKICKA IN SPRAY REFERENS VID SKAPANDE AV BUBBLE I STÄLLET
-            
-            // For now, let's assume MainScene will provide sprites
-            // Or MainScene passes its `player` and `otherPlayers` map to this manager
-            // For this example, we'll need to modify MainScene slightly to give access.
-            
-            // Temporär lösning, du behöver ge BubbleTextManager åtkomst till player/otherPlayers
-            // En bättre lösning är att MainScene skickar med sprite-referensen när den kallar addBubble
-            // Eller att BubbleTextManager får tillgång till MainScene's spelarlistor.
-            
-            // Just nu kommer denna del vara trasig tills MainScene är klar med sina Player/OtherPlayer objekt.
-            // Denna kod nedan behöver få in players referensen.
-            // Den mest robusta lösningen är att MainScene.ts är den som itererar över spelare,
-            // och sedan kallar en metod på BubbleTextManager som `bubbleTextManager.drawBubbleForPlayer(playerSprite, text, ts)`
-            // Se uppdatering i MainScene.ts update().
-
-            // För att få detta att fungera nu: MainScene behöver skicka med en referens till sin player och otherPlayers-mappen
-            // eller att BubbleTextManager får en metod som 'updatePlayerPositions(playersMap, currentPlayer)' och sköter allt internt.
-            
-            // För att fixa det snabbt: Lägg till spelar-referenser i `this.pendingBubbles` eller `this.activeBubbles` när de skapas.
-            // Eller få BubbleTextManager att ta emot spelar-kartan i sin update-metod.
-        });
-
-
-        // Iterera över aktiva bubblor för att uppdatera position och förstöra gamla
-        Object.entries(this.activeBubbles).forEach(([id, bubbleText]) => {
-            const parsedId = parseInt(id); // Säkerställ att det är ett nummer
-            const bubbleData = this.pendingBubbles[parsedId]; // Hämta data
-
-            if (!bubbleData || currentTime - bubbleData.ts > 15000) {
-                // Bubblan är för gammal eller har tagits bort från pending
-                bubbleText.destroy();
-                delete this.activeBubbles[parsedId];
-                delete this.pendingBubbles[parsedId]; // Ta bort från pending också
-                return;
-            }
-            
-            // Hämta sprite för spelaren med detta ID
-            let spriteToFollow: Phaser.Physics.Arcade.Sprite | null = null;
-            // Detta kräver att MainScene ger denna manager tillgång till sina player/otherPlayers
-            // För enkelhetens skull, lägg till player/otherPlayersMap som argument i constructor/update
-            // VIKTIGT: Denna del av BubbleTextManager måste justeras så den får korrekt sprite-referens.
-            // Tillfälligt sätt: MainScene ansvarar för att uppdatera bubbelpositioner.
-        });
-    }
-
-    // Ny metod för att rita/uppdatera en enskild bubbla baserat på sprite
-    drawBubbleForSprite(id: number, sprite: Phaser.Physics.Arcade.Sprite, textData: BubbleData) {
-        const { text, ts } = textData;
-        const lines = splitLines(text);
+        const lines = splitLines(message);
         
-        let bubbleText = this.activeBubbles[id];
-        if (!bubbleText) {
-            bubbleText = this.scene.add.text(sprite.x, sprite.y - 90, lines, {
-                fontSize: "16px",
-                color: "#ffeab6",
-                backgroundColor: "#000a",
-                padding: { x: 8, y: 4 },
-                align: "center",
-                wordWrap: { width: 240, useAdvancedWrap: true }
-            }).setOrigin(0.5, 1);
-            this.activeBubbles[id] = bubbleText;
-        } else {
-            bubbleText.setText(lines);
+        const bubbleText = this.scene.add.text(
+            attachedSprite.x,
+            // Position it above the sprite, adjusted for sprite height and text lines
+            attachedSprite.y - (attachedSprite.displayHeight / 2) - 10 - (lines.length * 10), 
+            lines,
+            { 
+                fontSize: '10px', 
+                color: '#FFFFFF', 
+                backgroundColor: '#333333', 
+                padding: { x: 5, y: 2 }, 
+                borderRadius: 5, // For rounded corners if your Phaser version supports it or if you simulate it
+                wordWrap: { width: 100, useWordWrap: true },
+                align: 'center' 
+            }
+        ).setOrigin(0.5, 1).setDepth(11); // Set depth high enough to be above players and other objects
+
+        // Set up a timer to destroy the bubble after a certain duration (e.g., 3 seconds)
+        const timer = this.scene.time.addEvent({
+            delay: 3000, 
+            callback: () => this.removeBubble(playerId),
+            callbackScope: this
+        });
+
+        this.activeBubbles.set(playerId, { textObject: bubbleText, timer, attachedSprite });
+    }
+
+    /**
+     * Removes a chat bubble for a given player ID.
+     * @param playerId The ID of the player whose bubble to remove.
+     */
+    removeBubble(playerId: number) {
+        const bubbleData = this.activeBubbles.get(playerId);
+        if (bubbleData) {
+            bubbleData.textObject.destroy();
+            bubbleData.timer.remove(false); // Stop the timer if it's still running
+            this.activeBubbles.delete(playerId);
         }
-        bubbleText.setPosition(sprite.x, sprite.y - 80 - (lines.length - 1) * 16);
+    }
+
+    /**
+     * Updates the position of an active chat bubble for a given player ID.
+     * This should be called whenever the player's sprite moves.
+     * @param playerId The ID of the player.
+     * @param spriteX The new X coordinate of the player's sprite.
+     * @param spriteY The new Y coordinate of the player's sprite.
+     * @param spriteDisplayHeight The display height of the player's sprite.
+     */
+    updateBubblePosition(playerId: number, spriteX: number, spriteY: number, spriteDisplayHeight: number) {
+        const bubbleData = this.activeBubbles.get(playerId);
+        if (bubbleData) {
+            const lines = splitLines(bubbleData.textObject.text); // Recalculate based on current text to adjust height
+            // Position the bubble relative to the sprite
+            bubbleData.textObject.setPosition(spriteX, spriteY - (spriteDisplayHeight / 2) - 10 - (lines.length * 10));
+        }
+    }
+
+    /**
+     * Clears all active chat bubbles.
+     */
+    clearAllBubbles() {
+        this.activeBubbles.forEach(bubble => {
+            bubble.textObject.destroy();
+            bubble.timer.remove(false);
+        });
+        this.activeBubbles.clear();
+    }
+
+    /**
+     * This method can be used for general updates if needed (e.g., fading effects).
+     * For now, it simply ensures the timers are being processed (though Phaser's Time Manager handles most of it).
+     */
+    updateBubbles(time: number) {
+        // This method can be kept for future features like fading or complex animations.
+        // For basic positioning, `updateBubblePosition` is called directly when a player moves.
     }
 }

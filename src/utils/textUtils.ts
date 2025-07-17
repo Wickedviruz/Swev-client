@@ -1,16 +1,19 @@
-// Helper för radbrytning
-export function splitLines(text: string, maxLen = 28): string[] {
-    const words = text.split(" ");
+// src/utils/textUtils.ts
+export function splitLines(text: string, maxWidth: number = 100): string[] {
+    const words = text.split(' ');
     const lines: string[] = [];
-    let line = "";
-    for (const word of words) {
-        if ((line + word).length > maxLen) {
-            if (line.length) lines.push(line);
-            line = word;
+    let currentLine = '';
+
+    words.forEach(word => {
+        if ((currentLine + word).length <= maxWidth) {
+            currentLine += (currentLine === '' ? '' : ' ') + word;
         } else {
-            line = line.length ? `${line} ${word}` : word;
+            lines.push(currentLine);
+            currentLine = word;
         }
+    });
+    if (currentLine !== '') {
+        lines.push(currentLine);
     }
-    if (line.length) lines.push(line);
     return lines;
 }
