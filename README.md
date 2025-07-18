@@ -69,11 +69,11 @@ Default configuration points to `localhost:8080`, but you can change this in the
 
 ## Roadmap
 
-- [ ] Phaser + React integration
-- [ ] WebSocket multiplayer connection
+- [x] Phaser + React integration
+- [x] WebSocket multiplayer connection
 - [ ] Map rendering and player movement
 - [ ] Basic combat and UI
-- [ ] Desktop builds (Tauri)
+- [x] Desktop builds (Tauri)
 - [ ] Inventory, chat, and more
 
 ## Contributing
