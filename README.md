@@ -1,69 +1,89 @@
-# React + TypeScript + Vite
+# Swev-client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Swev-client is the official game client for **SwevGame** – a modern 2D multiplayer online RPG inspired by classic MMORPGs, built with React, Phaser, and Tauri for desktop-native performance.
 
-Currently, two official plugins are available:
+It is designed to work seamlessly with [Swev-server](https://github.com/Wickedviruz/Swev-server), providing a fast, responsive, and moddable game experience.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **React + Phaser** hybrid architecture for flexible UI and high-performance 2D game rendering
+- **Tauri** integration for lightweight, secure, native desktop builds
+- **Real-time multiplayer** via WebSocket connection to Swev-server
+- **Modular and scalable** code structure, inspired by classic game clients but rewritten for modern JS/TS
+- **Built-in state management** (Redux or Context API)
+- **Cross-platform:** Windows, Linux, macOS
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## Project Structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```plaintext
+src/
+  components/      # React UI components (menus, HUD, dialogs)
+  game/            # Phaser game logic, scenes, and assets
+  hooks/           # Custom React hooks
+  services/        # API and WebSocket client logic
+  assets/          # Sprites, maps, sounds, and media
+  main.tsx         # App entry point
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Prerequisites
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Node.js (v20+ recommended)
+- npm or yarn
+- (For building desktop app: Tauri dependencies – see [Tauri setup](https://tauri.app/v1/guides/getting-started/prerequisites))
+
+### Installation
+
+```bash
+git clone https://github.com/Wickedviruz/Swev-client.git
+cd Swev-client
+npm install
 ```
+
+### Running in Development Mode (Web)
+
+```bash
+npm start
+```
+
+Open http://localhost:5173 in your browser.
+
+### Building Desktop App (Tauri)
+
+```bash
+npm run tauri dev
+```
+
+See [Tauri documentation](https://tauri.app/v1/guides/) for OS-specific requirements.
+
+### Connecting to the Server
+
+Swev-client connects to Swev-server via WebSocket.
+
+Default configuration points to `localhost:8080`, but you can change this in the config file or environment variables.
+
+## Roadmap
+
+- [ ] Phaser + React integration
+- [ ] WebSocket multiplayer connection
+- [ ] Map rendering and player movement
+- [ ] Basic combat and UI
+- [ ] Desktop builds (Tauri)
+- [ ] Inventory, chat, and more
+
+## Contributing
+
+Pull requests and suggestions are welcome! Please open an issue first for major changes.
+
+## Credits
+
+Inspired by classic MMORPG clients and modern open source projects.
+
+## License
+
+MIT (see LICENSE file)

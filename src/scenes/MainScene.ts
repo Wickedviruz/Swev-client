@@ -1,6 +1,6 @@
 // src/scenes/MainScene.ts
 import Phaser from 'phaser';
-import { TILE_SIZE, GRID_WIDTH, GRID_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from './../constants';
+import { TILE_SIZE, GRID_WIDTH, GRID_HEIGHT} from './../constants';
 import { Player } from '../objects/Player';
 import { OtherPlayer } from '../objects/OtherPlayer';
 import { BubbleTextManager } from '../managers/BubbleTextManager';
@@ -99,7 +99,7 @@ export class MainScene extends Phaser.Scene {
         const look = AssetManager.getCharacterLook(p.looktype);
         const atlasKey = look ? look.atlas : 'players'; 
 
-        this.currentPlayer = new Player(this, p.x, p.y, atlasKey, p.name, p.looktype, p.direction);
+        this.currentPlayer = new Player(this, p.pos_x, p.pos_y, atlasKey, p.name, p.looktype, p.direction);
         this.playerGroup?.add(this.currentPlayer.sprite);
         this.cameras.main.startFollow(this.currentPlayer.sprite, true, 0.08, 0.08);
 
@@ -230,14 +230,14 @@ export class MainScene extends Phaser.Scene {
             }
         });
 
-        this.socket.on("test", (data: any) => {
+        this.socket.on("test", (data: unknown) => {
             console.log('[MainScene] ✅ Test event received:', data);
         });
 
         console.log('[MainScene] ✅ All socket listeners set up');
     }
 
-    update(time: number, delta: number) {
+    update(time: number) {
         if (this.isChatInputFocused) {
             if (this.currentPlayer && this.currentPlayer.sprite.body) {
                 this.currentPlayer.setVelocity(0, 0); 

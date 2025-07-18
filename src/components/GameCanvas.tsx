@@ -6,6 +6,7 @@ import { MainScene } from "../scenes/MainScene";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../constants"; 
 import type { Character } from '../types'; 
 
+
 type GameCanvasProps = {
   socket: any;
   isChatInputFocused: boolean;
