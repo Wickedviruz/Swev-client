@@ -8,32 +8,39 @@ export class OtherPlayer {
     public id: number;
     public looktype: number; // Lägg till denna egenskap
     public direction: number; // Lägg till denna egenskap
+    public pos_x: number; 
+    public pos_y: number;
+    public pos_z: number;
 
     private scene: Phaser.Scene;
 
     constructor(
         scene: Phaser.Scene, 
-        x: number, 
-        y: number, 
+        pos_x: number, 
+        pos_y: number, 
+        pos_z: number,
         atlasKey: string, 
         name: string, 
         id: number,
-        looktype: number, // Lägg till denna parameter
-        direction: number // Lägg till denna parameter
+        looktype: number,
+        direction: number 
     ) {
         this.scene = scene;
         this.name = name;
         this.id = id;
-        this.looktype = looktype; // Spara looktype
-        this.direction = direction; // Spara direction
+        this.looktype = looktype; 
+        this.direction = direction; 
+        this.pos_x = pos_x;
+        this.pos_y = pos_y;
+        this.pos_z = pos_z;
 
         // Använd AssetManager för att få den initiala framen
         const initialFrame = AssetManager.getAnimationKey(looktype, direction, 'idle');
-        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, initialFrame).setOrigin(0.5);
+        this.sprite = this.scene.physics.add.sprite(pos_x, pos_y, atlasKey, initialFrame).setOrigin(0.5);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setDamping(true).setDrag(0.99);
 
-        this.nameText = this.scene.add.text(x, y - 20, name, {
+        this.nameText = this.scene.add.text(pos_x, pos_y - 20, name, {
             fontFamily: 'Arial',
             fontSize: '12px',
             color: '#ffffff',
@@ -44,9 +51,11 @@ export class OtherPlayer {
         this.sprite.setData('owner', this);
     }
 
-    updatePosition(x: number, y: number) {
-        this.sprite.x = x;
-        this.sprite.y = y;
+    updatePosition(pos_x: number, pos_y: number, pos_z: number) {
+        this.pos_x = pos_x;
+        this.pos_y = pos_y;
+        this.pos_z = pos_z;
+        this.sprite.setPosition(pos_x, pos_y);
         this.updateNameTextPosition();
     }
 

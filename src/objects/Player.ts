@@ -7,13 +7,17 @@ export class Player {
     public name: string;
     public looktype: number;
     public direction: number;
+    public pos_x: number; 
+    public pos_y: number;
+    public pos_z: number;
 
     private scene: Phaser.Scene;
 
     constructor(
         scene: Phaser.Scene, 
-        x: number, 
-        y: number, 
+        pos_x: number, 
+        pos_y: number,
+        pos_z: number, 
         atlasKey: string, 
         name: string,
         looktype: number, 
@@ -23,15 +27,18 @@ export class Player {
         this.name = name;
         this.looktype = looktype; 
         this.direction = direction; 
+        this.pos_x = pos_x;
+        this.pos_y = pos_y; 
+        this.pos_z = pos_z;
 
         // Använd AssetManager för att få den initiala framen
         const initialFrame = AssetManager.getAnimationKey(looktype, direction, 'idle');
-        this.sprite = this.scene.physics.add.sprite(x, y, atlasKey, initialFrame).setOrigin(0.5);
+        this.sprite = this.scene.physics.add.sprite(pos_x, pos_y, atlasKey, initialFrame).setOrigin(0.5);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setDamping(true).setDrag(0.99);
         this.sprite.body.onOverlap = true;
 
-        this.nameText = this.scene.add.text(x, y - 20, name, {
+        this.nameText = this.scene.add.text(pos_x, pos_y - 20, name, {
             fontFamily: 'Arial',
             fontSize: '12px',
             color: '#ffffff',
@@ -40,6 +47,14 @@ export class Player {
         }).setOrigin(0.5);
 
         this.sprite.setData('owner', this);
+    }
+
+    public updatePosition(pos_x: number, pos_y: number, pos_z: number) {
+        this.pos_x = pos_x;
+        this.pos_y = pos_y;
+        this.pos_z = pos_z;
+        this.sprite.setPosition(pos_x, pos_y);
+        this.updateNameTextPosition();
     }
     
     updateNameTextPosition() {
