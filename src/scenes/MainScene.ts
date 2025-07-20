@@ -12,6 +12,7 @@ type PlayerData = {
     name: string;
     x: number;
     y: number;
+    z: number;
     lookbody: number;
     lookfeet: number;
     lookhead: number;
@@ -169,7 +170,7 @@ export class MainScene extends Phaser.Scene {
                         this.createMainPlayer(p as Character); // Type-cast p till Character
                     } else {
                         // Uppdatera befintlig currentPlayer om det behövs (t.ex. vid re-sync från server)
-                        this.currentPlayer.updatePosition(p.x, p.y);
+                        this.currentPlayer.updatePosition(p.x, p.y, p.z);
                         this.currentPlayer.direction = p.direction;
                         const animationKey = AssetManager.getAnimationKey(p.looktype, p.direction, 'idle');
                         this.currentPlayer.playAnimation(animationKey);
